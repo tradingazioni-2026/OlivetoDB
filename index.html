@@ -279,10 +279,10 @@ td.nome { font-weight: 600; color: var(--ink); white-space: nowrap; }
       </div>
     </div>
     <nav>
-      <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
-      <button class="nav-btn" onclick="showSection('database')">Database</button>
-      <button class="nav-btn" onclick="showSection('selettore')">Selettore</button>
-      <button class="nav-btn" onclick="showSection('compatibilita')">Compatibilità</button>
+      <button class="nav-btn active" data-section="dashboard" onclick="showSection('dashboard')">Dashboard</button>
+      <button class="nav-btn" data-section="database" onclick="showSection('database')">Database</button>
+      <button class="nav-btn" data-section="selettore" onclick="showSection('selettore')">Selettore</button>
+      <button class="nav-btn" data-section="compatibilita" onclick="showSection('compatibilita')">Compatibilità</button>
     </nav>
   </div>
 </header>
@@ -602,11 +602,15 @@ function fredColor(f) {
 }
 
 // ── SECTION SWITCH ───────────────────────────────────────────
-function showSection(id) {
+function showSection(id, pushState=true) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.getAttribute('data-section') === id) b.classList.add('active');
+  });
+  if (pushState) history.pushState(null, '', '#' + id);
+  window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
 // ── DATABASE ─────────────────────────────────────────────────
@@ -849,6 +853,18 @@ window.addEventListener('DOMContentLoaded', () => {
   renderDB();
   populateCompat();
   buildOlivetRows();
+
+  // Deep link: leggi hash all'avvio
+  const validSections = ['dashboard','database','selettore','compatibilita'];
+  const hash = window.location.hash.replace('#','');
+  if (validSections.includes(hash)) showSection(hash, false);
+
+  // Gestisci back/forward del browser
+  window.addEventListener('popstate', () => {
+    const h = window.location.hash.replace('#','');
+    if (validSections.includes(h)) showSection(h, false);
+    else showSection('dashboard', false);
+  });
 });
 </script>
 </body>
