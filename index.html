@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OlivetoDB – Database Cultivar di Olivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root {
+  --ink:    #1A2418;
+  --grove:  #2D5016;
+  --leaf:   #5C8A2D;
+  --stone:  #8B7355;
+  --cream:  #F5F0E8;
+  --amber:  #C17B2A;
+  --muted:  #E8E2D9;
+  --snow:   #FFFFFF;
+  --g1-bg:  #DBEAFE; --g1-txt: #1E3A5F;
+  --g2-bg:  #DCFCE7; --g2-txt: #166534;
+  --nd-bg:  #F3F4F6; --nd-txt: #4B5563;
+  --est-bg: #FEF3C7; --est-txt: #92400E;
+  --r: 8px;
+  --shadow: 0 2px 12px rgba(26,36,24,.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.5; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+input, select { font-family: inherit; }
+
+/* ── HEADER ─────────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--grove);
+  box-shadow: 0 2px 16px rgba(0,0,0,.18);
+}
+.header-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .75rem 1.5rem;
+}
+.logo { display: flex; align-items: center; gap: .6rem; }
+.logo-icon { font-size: 1.6rem; }
+.logo-text { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }
+.logo-sub { color: rgba(245,240,232,.6); font-size: .7rem; font-weight: 400; display: block; margin-top: -2px; }
+nav { display: flex; gap: .25rem; }
+.nav-btn {
+  background: none; border: none; color: rgba(245,240,232,.7);
+  padding: .45rem .9rem; border-radius: 6px; font-size: .85rem; font-weight: 500;
+  transition: all .15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,.1); color: var(--cream); }
+.nav-btn.active { background: rgba(255,255,255,.18); color: var(--cream); }
+
+/* ── HERO ────────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, var(--grove) 0%, #1a3509 100%);
+  color: var(--cream); padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900; letter-spacing: -.02em; margin-bottom: .5rem;
+}
+.hero p { color: rgba(245,240,232,.75); max-width: 560px; margin: 0 auto 2rem; font-size: .95rem; }
+.stat-cards {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem;
+}
+.stat-card {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  border-radius: var(--r); padding: 1rem 1.5rem; text-align: center; min-width: 110px;
+  backdrop-filter: blur(8px);
+}
+.stat-val { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 500; color: var(--cream); }
+.stat-lbl { font-size: .72rem; color: rgba(245,240,232,.6); text-transform: uppercase; letter-spacing: .08em; margin-top: .15rem; }
+.stat-card.g1 .stat-val { color: #93C5FD; }
+.stat-card.g2 .stat-val { color: #86EFAC; }
+.stat-card.est .stat-val { color: #FCD34D; }
+
+/* ── MAIN ────────────────────────────────────────────────── */
+main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── SECTION TITLES ──────────────────────────────────────── */
+.section-header { margin-bottom: 1.5rem; }
+.section-header h2 {
+  font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700;
+  color: var(--grove); letter-spacing: -.01em;
+}
+.section-header p { color: var(--stone); font-size: .875rem; margin-top: .25rem; }
+
+/* ── FILTERS ─────────────────────────────────────────────── */
+.filters {
+  display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.2rem;
+  background: var(--snow); padding: 1rem; border-radius: var(--r);
+  border: 1px solid var(--muted); box-shadow: var(--shadow);
+}
+.filters input[type=text] {
+  border: 1.5px solid var(--muted); border-radius: 6px; padding: .45rem .8rem;
+  font-size: .85rem; width: 180px; background: var(--cream); color: var(--ink);
+  transition: border-color .15s;
+}
+.filters input[type=text]:focus { outline: none; border-color: var(--leaf); }
+.filters select {
+  border: 1.5px solid var(--muted); border-radius: 6px; padding: .45rem .8rem;
+  font-size: .85rem; background: var(--cream); color: var(--ink);
+  transition: border-color .15s;
+}
+.filters select:focus { outline: none; border-color: var(--leaf); }
+.filter-label { font-size: .75rem; color: var(--stone); font-weight: 500; align-self: center; }
+
+/* ── TABLE ───────────────────────────────────────────────── */
+.table-wrap {
+  background: var(--snow); border-radius: var(--r);
+  border: 1px solid var(--muted); overflow-x: auto; box-shadow: var(--shadow);
+}
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+thead th {
+  padding: .75rem .9rem; text-align: left; font-size: .72rem; font-weight: 600;
+  color: var(--stone); text-transform: uppercase; letter-spacing: .06em;
+  background: var(--cream); border-bottom: 1.5px solid var(--muted);
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+thead th:hover { color: var(--grove); }
+tbody tr { border-bottom: 1px solid var(--muted); transition: background .1s; }
+tbody tr:hover { background: #f9f6f0; }
+tbody tr:last-child { border-bottom: none; }
+td { padding: .6rem .9rem; vertical-align: top; }
+td.nome { font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+/* ── BADGES ──────────────────────────────────────────────── */
+.badge {
+  display: inline-block; font-size: .72rem; font-weight: 600;
+  padding: .15rem .5rem; border-radius: 4px; white-space: nowrap;
+}
+.badge-g1 { background: var(--g1-bg); color: var(--g1-txt); }
+.badge-g2 { background: var(--g2-bg); color: var(--g2-txt); }
+.badge-nd { background: var(--nd-bg); color: var(--nd-txt); }
+.badge-est { background: var(--est-bg); color: var(--est-txt); }
+.badge-af { background: #BBFCA0; color: #166534; }
+.badge-ap { background: #FDE68A; color: #92400E; }
+.badge-as { background: #FCA5A5; color: #991B1B; }
+.badge-fp { background: #FBEAF0; color: #72243E; }
+.badge-fm { background: #FAEEDA; color: #633806; }
+.badge-ft { background: var(--g1-bg); color: var(--g1-txt); }
+.dot-green { color: #16a34a; font-weight: 700; }
+.dot-red { color: #dc2626; font-weight: 700; }
+.dot-amber { color: var(--amber); font-weight: 700; }
+
+/* ── COUNT ───────────────────────────────────────────────── */
+.result-count {
+  font-size: .8rem; color: var(--stone); margin-bottom: .75rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── COMPAT CHECKER ──────────────────────────────────────── */
+.compat-grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 1rem; align-items: center; margin-bottom: 2rem; }
+.compat-card {
+  background: var(--snow); border: 1.5px solid var(--muted); border-radius: var(--r);
+  padding: 1.5rem; box-shadow: var(--shadow);
+}
+.compat-card label { font-size: .75rem; font-weight: 600; color: var(--stone); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: .5rem; }
+.compat-card select {
+  width: 100%; border: 1.5px solid var(--muted); border-radius: 6px;
+  padding: .6rem .8rem; font-size: .9rem; background: var(--cream); color: var(--ink);
+}
+.compat-vs {
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--stone);
+}
+.compat-result {
+  background: var(--snow); border-radius: var(--r); padding: 2rem;
+  text-align: center; border: 2px solid var(--muted); box-shadow: var(--shadow);
+  transition: border-color .3s;
+}
+.compat-result.compatible { border-color: var(--leaf); background: #f0fdf4; }
+.compat-result.incompatible { border-color: #DC2626; background: #fef2f2; }
+.compat-result.uncertain { border-color: var(--amber); background: #fffbeb; }
+.compat-icon {
+  font-size: 3rem; display: block; margin-bottom: .75rem;
+  animation: pop .35s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes pop { from { transform: scale(0) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+.compat-verdict { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: .5rem; }
+.compat-detail { font-size: .85rem; color: var(--stone); max-width: 480px; margin: 0 auto; }
+.compat-groups { display: flex; gap: .5rem; justify-content: center; margin: 1rem 0; flex-wrap: wrap; }
+
+/* ── SELETTORE ───────────────────────────────────────────── */
+.oliveto-form {
+  background: var(--snow); border-radius: var(--r); padding: 1.5rem;
+  border: 1px solid var(--muted); box-shadow: var(--shadow); margin-bottom: 1.5rem;
+}
+.oliveto-form h3 { font-weight: 600; font-size: .95rem; margin-bottom: 1rem; color: var(--grove); }
+.oliveto-rows { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+.oliveto-row { display: grid; grid-template-columns: 2fr 80px 100px 100px 100px; gap: .6rem; align-items: center; }
+.oliveto-row select, .oliveto-row input {
+  border: 1.5px solid var(--muted); border-radius: 6px; padding: .45rem .6rem;
+  font-size: .82rem; background: var(--cream); color: var(--ink); width: 100%;
+}
+.oliveto-row .auto-cell, .oliveto-row .fior-cell, .oliveto-row .si-cell {
+  font-size: .78rem; text-align: center; font-family: 'JetBrains Mono', monospace; color: var(--stone);
+}
+.oliveto-row-hdr {
+  display: grid; grid-template-columns: 2fr 80px 100px 100px 100px; gap: .6rem;
+  font-size: .7rem; color: var(--stone); font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; margin-bottom: .25rem; padding: 0 .1rem;
+}
+.btn-analyze {
+  background: var(--grove); color: var(--cream); border: none;
+  padding: .6rem 1.4rem; border-radius: 6px; font-weight: 600; font-size: .875rem;
+  transition: background .15s;
+}
+.btn-analyze:hover { background: #1a3509; }
+.btn-reset {
+  background: none; color: var(--stone); border: 1.5px solid var(--muted);
+  padding: .6rem 1rem; border-radius: 6px; font-size: .875rem; margin-left: .5rem;
+  transition: all .15s;
+}
+.btn-reset:hover { border-color: var(--stone); }
+
+/* ── RISULTATI SELETTORE ─────────────────────────────────── */
+.results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.result-metric {
+  background: var(--snow); border-radius: var(--r); padding: 1.2rem;
+  border: 1px solid var(--muted); box-shadow: var(--shadow);
+}
+.metric-val { font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; font-weight: 500; }
+.metric-lbl { font-size: .78rem; color: var(--stone); margin-top: .15rem; }
+.diagnosis {
+  background: var(--snow); border-radius: var(--r); padding: 1.2rem 1.5rem;
+  border-left: 4px solid var(--leaf); box-shadow: var(--shadow); margin-bottom: 1.5rem;
+  font-size: .9rem;
+}
+.diagnosis.warn { border-left-color: var(--amber); }
+.diagnosis.danger { border-left-color: #DC2626; }
+.recs-title { font-weight: 600; font-size: .95rem; color: var(--grove); margin-bottom: .75rem; }
+.rec-cards { display: flex; flex-direction: column; gap: .6rem; }
+.rec-card {
+  background: var(--snow); border-radius: 6px; padding: .9rem 1.1rem;
+  border: 1px solid var(--muted); display: flex; align-items: flex-start; gap: .75rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.rec-card .rec-badge { flex-shrink: 0; }
+.rec-card .rec-name { font-weight: 600; font-size: .875rem; }
+.rec-card .rec-why { font-size: .78rem; color: var(--stone); margin-top: .15rem; }
+.rec-card .rec-meta { font-size: .75rem; color: var(--stone); margin-top: .2rem; font-family: 'JetBrains Mono', monospace; }
+
+/* ── LEAKY BADGE ─────────────────────────────────────────── */
+.leaky-badge {
+  display: inline-block; background: #FAF5FF; color: #5B21B6;
+  border: 1px dashed #7C3AED; border-radius: 4px; font-size: .7rem; padding: .1rem .4rem;
+}
+
+/* ── FONTE NOTE ──────────────────────────────────────────── */
+.fonte-note { font-size: .72rem; color: var(--stone); font-style: italic; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--muted); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .compat-grid { grid-template-columns: 1fr; }
+  .compat-vs { transform: rotate(90deg); }
+  .oliveto-row, .oliveto-row-hdr { grid-template-columns: 1fr 60px; }
+  .oliveto-row .auto-cell, .oliveto-row .fior-cell, .oliveto-row .si-cell { display: none; }
+  .oliveto-row-hdr span:nth-child(n+3) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🫒</span>
+      <div>
+        <span class="logo-text">OlivetoDB</span>
+        <span class="logo-sub">Database Cultivar di Olivo</span>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showSection('database')">Database</button>
+      <button class="nav-btn" onclick="showSection('selettore')">Selettore</button>
+      <button class="nav-btn" onclick="showSection('compatibilita')">Compatibilità</button>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Ogni olivo ha il suo compagno.</h1>
+  <p>Database scientifico sulla compatibilità di impollinazione tra cultivar di olivo, basato su Mariotti et al. (2021) e letteratura agronomica italiana.</p>
+  <div class="stat-cards">
+    <div class="stat-card"><div class="stat-val" id="hero-tot">53</div><div class="stat-lbl">Cultivar</div></div>
+    <div class="stat-card g1"><div class="stat-val" id="hero-g1">15</div><div class="stat-lbl">Gruppo G1</div></div>
+    <div class="stat-card g2"><div class="stat-val" id="hero-g2">16</div><div class="stat-lbl">Gruppo G2</div></div>
+    <div class="stat-card est"><div class="stat-val" id="hero-est">6</div><div class="stat-lbl">Stimate ⚠️</div></div>
+  </div>
+</div>
+
+<main>
+
+<!-- ═══ DASHBOARD ══════════════════════════════════════════ -->
+<section id="dashboard" class="section active">
+  <div class="section-header">
+    <h2>Panoramica</h2>
+    <p>Stato del database e ripartizione per gruppo SI, autofertilità ed epoca di fioritura.</p>
+  </div>
+  <div class="results-grid" style="margin-bottom:1.5rem">
+    <div class="result-metric">
+      <div class="metric-val" style="color:var(--g1-txt)">15</div>
+      <div class="metric-lbl">Cultivar Gruppo G1 (confermate)</div>
+    </div>
+    <div class="result-metric">
+      <div class="metric-val" style="color:var(--leaf)">16</div>
+      <div class="metric-lbl">Cultivar Gruppo G2 (confermate)</div>
+    </div>
+    <div class="result-metric">
+      <div class="metric-val" style="color:var(--stone)">22</div>
+      <div class="metric-lbl">Cultivar gruppo N.D. / non classificate</div>
+    </div>
+    <div class="result-metric">
+      <div class="metric-val" style="color:var(--amber)">4</div>
+      <div class="metric-lbl">Cultivar con gruppo stimato ⚠️</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+    <div class="oliveto-form" style="margin:0">
+      <h3>🌿 Regola fondamentale DSI</h3>
+      <p style="font-size:.85rem;color:var(--stone);line-height:1.6">Il sistema di autoincompatibilità diallelica (DSI) dell'olivo divide tutte le cultivar in due soli gruppi. La regola è semplice:</p>
+      <div style="margin:1rem 0;display:flex;flex-direction:column;gap:.5rem">
+        <div style="display:flex;align-items:center;gap:.75rem;background:#f0fdf4;padding:.6rem .9rem;border-radius:6px;border:1px solid #bbf7d0">
+          <span style="font-size:1.2rem">✅</span>
+          <span style="font-size:.85rem;font-weight:600;color:#166534">G1 × G2 — Compatibili: impollinazione efficace</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;background:#fef2f2;padding:.6rem .9rem;border-radius:6px;border:1px solid #fca5a5">
+          <span style="font-size:1.2rem">❌</span>
+          <span style="font-size:.85rem;font-weight:600;color:#991b1b">G1 × G1 — Incompatibili: nessuna fecondazione</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;background:#fef2f2;padding:.6rem .9rem;border-radius:6px;border:1px solid #fca5a5">
+          <span style="font-size:1.2rem">❌</span>
+          <span style="font-size:.85rem;font-weight:600;color:#991b1b">G2 × G2 — Incompatibili: nessuna fecondazione</span>
+        </div>
+      </div>
+      <p style="font-size:.78rem;color:var(--stone)">Fonte: Mariotti R. et al. (2021) <em>Evolutionary Applications</em> 14:983–995</p>
+    </div>
+    <div class="oliveto-form" style="margin:0">
+      <h3>📊 Impollinazione assistita</h3>
+      <p style="font-size:.85rem;color:var(--stone);margin-bottom:.75rem">Dati operativi da Cantini, Romi, Cai (2021) – Progetto Olimpolli / CNR-IBiE:</p>
+      <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem">
+        <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;background:var(--cream);border-radius:5px">
+          <span>Incremento produttività medio</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--grove)">+20%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;background:var(--cream);border-radius:5px">
+          <span>Quantità polline consigliata</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--grove)">40 g/ha</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;background:var(--cream);border-radius:5px">
+          <span>Max utile per ettaro</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--grove)">80–100 g/ha</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;background:var(--cream);border-radius:5px">
+          <span>Finestra ottimale intervento</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--grove)">7–10 gg da apertura</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;background:var(--cream);border-radius:5px">
+          <span>Conservazione lunga (congelatore)</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--grove)">−20°C, max 1 anno</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;background:#FAF5FF;border-radius:5px;border:1px dashed #7C3AED">
+          <span>Polline più stabile nel tempo</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#5B21B6">Maurino, Pendolino</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="oliveto-form" style="margin:0">
+    <h3>🏷️ Leggenda colori</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.5rem">
+      <span class="badge badge-g1">G1 Confermato</span>
+      <span class="badge badge-g2">G2 Confermato</span>
+      <span class="badge badge-nd">Gruppo N.D.</span>
+      <span class="badge badge-est">⚠️ Stimato</span>
+      <span class="badge badge-af">Autofertile</span>
+      <span class="badge badge-ap">Parz. autofertile</span>
+      <span class="badge badge-as">Autosterile</span>
+      <span class="badge badge-fp">Fioritura Precoce</span>
+      <span class="badge badge-fm">Fioritura Media</span>
+      <span class="badge badge-ft">Fioritura Tardiva</span>
+      <span class="leaky-badge">⚡ Leaky SI</span>
+    </div>
+    <p style="font-size:.75rem;color:var(--stone);margin-top:.75rem">⚠️ Stime: gruppo G1/G2 dedotto per inferenza logica (impollinatori noti → gruppo opposto; derivazione genetica). Non verificato con test stigma in vitro (Mariotti 2021).</p>
+  </div>
+</section>
+
+<!-- ═══ DATABASE ════════════════════════════════════════════ -->
+<section id="database" class="section">
+  <div class="section-header">
+    <h2>Database Cultivar</h2>
+    <p>53 cultivar con gruppo SI, autofertilità, fioritura, resa e impollinatori consigliati.</p>
+  </div>
+  <div class="filters">
+    <span class="filter-label">Cerca:</span>
+    <input type="text" id="db-search" placeholder="Cultivar, origine…" oninput="renderDB()">
+    <select id="db-si" onchange="renderDB()">
+      <option value="">Tutti i gruppi SI</option>
+      <option value="G1">G1</option>
+      <option value="G2">G2</option>
+      <option value="N.D.">N.D.</option>
+    </select>
+    <select id="db-auto" onchange="renderDB()">
+      <option value="">Autofertilità</option>
+      <option value="Autofertile">Autofertile</option>
+      <option value="Parzialmente">Parzialmente autofertile</option>
+      <option value="Autosterile">Autosterile</option>
+    </select>
+    <select id="db-fior" onchange="renderDB()">
+      <option value="">Fioritura</option>
+      <option value="Precoce">Precoce</option>
+      <option value="Media">Media</option>
+      <option value="Tardiva">Tardiva</option>
+    </select>
+    <select id="db-est" onchange="renderDB()">
+      <option value="">Tutte</option>
+      <option value="si">Solo stimate ⚠️</option>
+      <option value="no">Solo confermate</option>
+    </select>
+  </div>
+  <div class="result-count" id="db-count"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cultivar</th>
+          <th>Gruppo SI</th>
+          <th>Autofertilità</th>
+          <th>Fioritura</th>
+          <th>Resa olio</th>
+          <th>R. freddo</th>
+          <th>Origine</th>
+          <th>Impollinatori consigliati</th>
+        </tr>
+      </thead>
+      <tbody id="db-tbody"></tbody>
+    </table>
+  </div>
+  <p class="fonte-note">Fonti: Mariotti et al. (2021) Evol. Appl. 14:983–995 · Farinelli et al. (2002) Frutticoltura n.10 · Cantini et al. (2021) Manuale Olimpolli CNR-IBiE · Newsletter AAO n.57 (maggio 2025) · AIPO Verona · Letteratura agronomica</p>
+</section>
+
+<!-- ═══ SELETTORE ═══════════════════════════════════════════ -->
+<section id="selettore" class="section">
+  <div class="section-header">
+    <h2>Selettore Oliveto</h2>
+    <p>Inserisci le cultivar presenti nel tuo oliveto per ricevere consigli su quale aggiungere o sostituire.</p>
+  </div>
+  <div class="oliveto-form">
+    <h3>Composizione attuale dell'oliveto</h3>
+    <div class="oliveto-row-hdr">
+      <span>Cultivar</span><span>N° piante</span><span>Gruppo SI</span><span>Fioritura</span><span>Autofertilità</span>
+    </div>
+    <div class="oliveto-rows" id="oliveto-rows"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.75rem">
+      <button class="btn-analyze" onclick="analyzeOliveto()">Analizza oliveto →</button>
+      <button class="btn-reset" onclick="resetOliveto()">Azzera</button>
+    </div>
+  </div>
+  <div id="oliveto-results" style="display:none">
+    <div class="results-grid" id="metrics-grid"></div>
+    <div id="diagnosis-box" class="diagnosis" style="margin-bottom:1.5rem"></div>
+    <div class="recs-title">Cultivar consigliate per la sostituzione / aggiunta</div>
+    <div class="rec-cards" id="rec-cards"></div>
+    <div class="fonte-note" style="margin-top:1rem">Suggerimenti basati su equilibrio G1/G2 e copertura di fioritura. Verificare con agronomo locale.</div>
+  </div>
+</section>
+
+<!-- ═══ COMPATIBILITÀ ═══════════════════════════════════════ -->
+<section id="compatibilita" class="section">
+  <div class="section-header">
+    <h2>Verifica Compatibilità</h2>
+    <p>Scegli due cultivar per verificare se il polline è compatibile secondo il sistema DSI.</p>
+  </div>
+  <div class="compat-grid">
+    <div class="compat-card">
+      <label>Prima cultivar</label>
+      <select id="cv1" onchange="checkCompat()">
+        <option value="">Seleziona cultivar…</option>
+      </select>
+      <div id="cv1-info" style="margin-top:.75rem;font-size:.78rem;color:var(--stone)"></div>
+    </div>
+    <div class="compat-vs">×</div>
+    <div class="compat-card">
+      <label>Seconda cultivar</label>
+      <select id="cv2" onchange="checkCompat()">
+        <option value="">Seleziona cultivar…</option>
+      </select>
+      <div id="cv2-info" style="margin-top:.75rem;font-size:.78rem;color:var(--stone)"></div>
+    </div>
+  </div>
+  <div class="compat-result" id="compat-result">
+    <span class="compat-icon">🫒</span>
+    <div class="compat-verdict" style="color:var(--stone)">Seleziona due cultivar</div>
+    <div class="compat-detail">Il risultato apparirà qui dopo aver selezionato entrambe le cultivar.</div>
+  </div>
+  <p class="fonte-note" style="margin-top:1rem">⚠️ Le cultivar con gruppo stimato (badge arancio) hanno un risultato PROBABILE ma non verificato da test stigma in vitro. Per cultivar con gruppo N.D. la compatibilità è ignota.</p>
+</section>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATABASE
+// ═══════════════════════════════════════════════════════════
+const DB = [
+  // [nome, si, si_est, auto, fior, resa, freddo, malattie, origine, leaky, imp_a, imp_m]
+  ["Moraiolo","G1",false,"Parzialmente autofertile","Tardiva","18-20%","Media","Resistente (occhio di pavone)","Italia (Umbria)",false,["Kalamon","Carolea","Nostrale di Rigali","Maurino","Pendolino"],["Dolce Agogia"]],
+  ["Leccino","G1",false,"Autosterile","Media","14-18%","Alta","Resistente (occhio di pavone)","Italia (Toscana)",false,["Carolea","Dolce Agogia","Maurino","Pendolino"],["Frantoio"]],
+  ["Frantoio","G1",false,"Autofertile","Media","18-22%","Media","Sensibile (verticillosi)","Italia (Toscana)",true,["Kalamon","Moraiolo","Maurino","Pendolino"],["Carolea","Leccino"]],
+  ["Gentile Grande","G1",false,"N.D.","Media","N.D.","N.D.","N.D.","Italia (Umbria)",false,[],[]],
+  ["San Felice","G1",false,"N.D.","Tardiva","N.D.","N.D.","N.D.","Italia (Umbria)",false,["Pendolino"],["Dolce Agogia"]],
+  ["Villastrada","G1",false,"N.D.","Tardiva","N.D.","N.D.","N.D.","Italia (Umbria)",false,[],[]],
+  ["Leccio del Corno","G1",false,"Autosterile","Media","16-19%","Alta","Tollerante Xylella","Italia (Toscana/Umbria)",false,["Pendolino","Frantoio"],["Maurino"]],
+  ["Orbetana","G1",false,"Autosterile","Media","N.D.","N.D.","N.D.","Italia (Umbria)",false,["Carolea","Kalamon"],[]],
+  ["Pocciolo","G1",false,"N.D.","N.D.","N.D.","N.D.","N.D.","Italia (Umbria)",false,[],[]],
+  ["Gentile di Montone","G1",false,"N.D.","N.D.","N.D.","N.D.","N.D.","Italia (Umbria)",false,[],[]],
+  ["Arbequina","G1",false,"Autofertile","Media","16-22%","Bassa","Mediamente resistente","Spagna",false,["Arbosana"],["Koroneiki"]],
+  ["Hojiblanca","G1",false,"Parzialmente autofertile","Tardiva","14-17%","Media","Resistente (verticillosi)","Spagna",false,["Picual","Manzanilla Cacereña"],[]],
+  ["Lechin de Sevilla","G1",false,"Autosterile","Media","12-16%","Bassa","Sensibile","Spagna",false,["Picual"],["Manzanilla Cacereña"]],
+  ["Ogliarola Barese","G1",false,"Parzialmente autofertile","Media","14-18%","Bassa","Mediamente resistente","Italia (Puglia)",false,["Coratina","Peranzana"],[]],
+  ["Nociara","G1",false,"Autosterile","Media","12-15%","Bassa","Mediamente resistente","Italia (Puglia)",false,["Coratina"],["Peranzana"]],
+  ["Pendolino","G2",false,"Autosterile","Media","12-16%","Alta","Resistente (occhio di pavone)","Italia (Toscana)",false,["Moraiolo","Leccino","Frantoio","San Felice"],[]],
+  ["Dolce Agogia","G2",false,"Parzialmente autofertile","Media","14-17%","Media","Mediamente resistente","Italia (Umbria)",false,["Moraiolo"],["Leccino","Frantoio","Orbetana"]],
+  ["Raio","G2",false,"N.D.","Precoce","N.D.","N.D.","N.D.","Italia (Umbria)",false,["Moraiolo","Leccino"],[]],
+  ["Borgiona","G2",false,"N.D.","N.D.","N.D.","N.D.","N.D.","Italia (Umbria)",false,[],[]],
+  ["Maurino","G2",false,"Autosterile","Media","13-17%","Alta","Resistente","Italia (Toscana)",false,["Frantoio","Moraiolo","Orbetana"],["Dolce Agogia"]],
+  ["Canino","G2",false,"Autosterile","Media","15-18%","Media","Mediamente resistente","Italia (Lazio)",false,[],[]],
+  ["Bosana","G2",false,"Parzialmente autofertile","Tardiva","16-20%","Bassa","Mediamente resistente","Italia (Sardegna)",false,[],[]],
+  ["Nostrale di Rigali","G2",false,"Variabile","Precoce","14-16%","Alta","Resistente","Italia (Umbria)",false,["Moraiolo","Leccino"],[]],
+  ["Coratina","G2",false,"Parzialmente autofertile","Tardiva","18-24%","Bassa","Resistente (occhio di pavone)","Italia (Puglia)",false,["Ogliarola Barese"],["Frantoio"]],
+  ["Itrana","G2",false,"Parzialmente autofertile","Media","14-17%","Media","Mediamente resistente","Italia (Lazio)",false,[],[]],
+  ["Piantone di Mogliano","G2",false,"N.D.","Media","N.D.","Alta","N.D.","Italia (Marche)",false,[],[]],
+  ["Piangente","G2",false,"N.D.","N.D.","N.D.","N.D.","N.D.","Italia (Umbria)",false,[],[]],
+  ["Koroneiki","G2",false,"Autofertile","Precoce","18-20%","Bassa","Resistente (occhio di pavone)","Grecia",true,["Mastoidis"],["Arbequina"]],
+  ["Picual","G2",false,"Parzialmente autofertile","Media","18-23%","Media","Resistente (verticillosi)","Spagna",false,["Hojiblanca"],["Lechin de Sevilla"]],
+  ["Manzanilla Cacereña","G2",false,"Autosterile","Media","12-16%","Media","Mediamente resistente","Spagna",false,["Hojiblanca","Lechin de Sevilla"],[]],
+  ["Peranzana","G2",false,"Autosterile","Media","16-19%","Media","Mediamente resistente","Italia (Puglia)",false,["Ogliarola Barese"],["Coratina"]],
+  ["Carolea","N.D.",false,"Autosterile","Media","18-22%","Bassa","Mediamente resistente","Italia (Calabria)",false,["Leccino","Frantoio","Moraiolo"],[]],
+  ["Kalamon","N.D.",false,"Parzialmente autofertile","Tardiva","8-12%","Bassa","Sensibile (tubercolosi)","Grecia",false,["Moraiolo","Frantoio"],["Leccino"]],
+  ["Arbosana","N.D.",false,"Autofertile","Precoce","14-18%","Bassa","Mediamente resistente","Spagna",false,["Arbequina"],["Koroneiki"]],
+  ["Mastoidis","N.D.",false,"N.D.","Media","N.D.","Alta","Resistente (tubercolosi)","Grecia",false,["Koroneiki"],[]],
+  ["Grignano","G2",true,"Autosterile","Tardiva","10-14%","Alta","Resistente (rogna, oc. pavone)","Italia (Veneto/Verona)",true,["Leccino","Trepp"],[]],
+  ["Casaliva","N.D.",false,"Autofertile","Precoce","19-23%","Bassa","Sensibile (occhio di pavone, rogna)","Italia (Lago di Garda)",false,["Trepp","Pendolino"],["Grignano"]],
+  ["Trepp","N.D.",false,"Autofertile","Media","14-18%","Alta","Resistente (rogna, oc. pavone)","Italia (Veneto/Valpolicella)",false,["Grignano","Casaliva"],[]],
+  ["Regina del Garda","N.D.",false,"Parzialmente autofertile","Media","12-16%","Media","Mediamente resistente","Italia (Lago di Garda)",false,["Casaliva"],["Leccino"]],
+  ["Cortina","N.D.",false,"N.D.","Media","N.D.","N.D.","N.D.","Italia (Nord Italia)",false,[],[]],
+  ["Bianchera","N.D.",false,"Parzialmente autofertile","Tardiva","16-20%","Alta","Sensibile (oc. pavone, mosca)","Italia (Friuli/Trieste)",false,[],["Leccino","Frantoio"]],
+  ["Bianco Lilla","N.D.",false,"N.D.","N.D.","N.D.","N.D.","N.D.","Italia (Nord Italia)",false,[],[]],
+  ["Lecciana","N.D.",false,"Autofertile","Precoce","18-21%","Alta","Resistente (Xylella fastidiosa)","Italia (ibrido Leccino×Arbosana)",false,[],["Arbequina","Koroneiki"]],
+  ["Nostrana di Brisighella","N.D.",false,"Autofertile","Media","16-20%","Alta","Resistente (rogna, oc. pavone)","Italia (Emilia-Romagna)",false,["Ghiacciola"],[]],
+  ["Matosso","N.D.",false,"N.D.","Tardiva","N.D.","Media","N.D.","Italia (Veneto - Colli Euganei)",false,[],["Leccino","Frantoio"]],
+  ["Albosana","N.D.",false,"Autofertile","Precoce","14-18%","Bassa","Mediamente resistente","Spagna",false,["Arbequina"],["Koroneiki"]],
+  ["Uova di Piccione","N.D.",false,"Parzialmente autofertile","Precoce","Bassa (mensa)","Media","Resistente (rogna, oc. pavone)","Tunisia/Turchia",false,["Leccino","Pendolino"],["Frantoio"]],
+  ["Favolosa FS-17","G1",true,"Autofertile","Media","19-22%","Media","Resistente (Xylella fastidiosa)","Italia (derivata da Frantoio, CNR)",false,["Pendolino","Maurino","Dolce Agogia"],["Raio"]],
+  ["Cipressino","G2",true,"Autosterile","Tardiva","15-17%","Alta","Alta % aborto fiori (50-60%)","Italia (Puglia)",false,["Frantoio","Leccino","Moraiolo"],["Pendolino"]],
+  ["Olivastra Seggianese","N.D.",false,"Autosterile","Tardiva","15-18%","Alta","Resistente (freddo, siccità)","Italia (Toscana - Grosseto)",false,["Frantoio","Moraiolo"],["Leccino"]],
+  ["Correggiolo","N.D.",false,"Parzialmente autofertile","Media","16-20%","Alta","Resistente (occhio di pavone)","Italia (Toscana)",false,["Pendolino","Moraiolo"],["Frantoio"]],
+  ["Grappolo","N.D.",false,"N.D.","Media","N.D.","N.D.","N.D. – polline eccezionalmente vitale","Italia (Toscana)",false,[],[]],
+  ["Madremignola","N.D.",false,"N.D.","Media","N.D.","N.D.","N.D.","Italia (Toscana)",false,[],[]],
+];
+
+// ── Helpers ─────────────────────────────────────────────────
+function getSI(r) { return r[1]; }
+function isEst(r) { return r[2]; }
+function getAuto(r) { return r[3]; }
+function getFior(r) { return r[4]; }
+function getImp(r) { return [...r[10], ...r[11]]; }
+
+function siBadge(si, est) {
+  if (est) return `<span class="badge badge-est">⚠️ ${si}</span>`;
+  if (si==="G1") return `<span class="badge badge-g1">G1</span>`;
+  if (si==="G2") return `<span class="badge badge-g2">G2</span>`;
+  return `<span class="badge badge-nd">N.D.</span>`;
+}
+function autoBadge(a) {
+  if (a==="Autofertile") return `<span class="badge badge-af">Autofertile</span>`;
+  if (a.startsWith("Parz")||a==="Variabile") return `<span class="badge badge-ap">${a}</span>`;
+  if (a==="Autosterile") return `<span class="badge badge-as">Autosterile</span>`;
+  return `<span style="color:var(--stone);font-size:.78rem">—</span>`;
+}
+function fiorBadge(f) {
+  if (f==="Precoce") return `<span class="badge badge-fp">Precoce</span>`;
+  if (f==="Media") return `<span class="badge badge-fm">Media</span>`;
+  if (f==="Tardiva") return `<span class="badge badge-ft">Tardiva</span>`;
+  return `<span style="color:var(--stone);font-size:.78rem">—</span>`;
+}
+function fredColor(f) {
+  if (f==="Alta") return "dot-green";
+  if (f==="Bassa") return "dot-red";
+  return "dot-amber";
+}
+
+// ── SECTION SWITCH ───────────────────────────────────────────
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── DATABASE ─────────────────────────────────────────────────
+function renderDB() {
+  const q = document.getElementById('db-search').value.toLowerCase();
+  const fSI = document.getElementById('db-si').value;
+  const fAuto = document.getElementById('db-auto').value;
+  const fFior = document.getElementById('db-fior').value;
+  const fEst = document.getElementById('db-est').value;
+
+  let rows = DB.filter(r => {
+    if (q && !r[0].toLowerCase().includes(q) && !r[7].toLowerCase().includes(q)) return false;
+    if (fSI && r[1] !== fSI) return false;
+    if (fAuto && !r[3].startsWith(fAuto.slice(0,5))) return false;
+    if (fFior && r[4] !== fFior) return false;
+    if (fEst === 'si' && !r[2]) return false;
+    if (fEst === 'no' && r[2]) return false;
+    return true;
+  });
+
+  document.getElementById('db-count').textContent = `${rows.length} di ${DB.length} cultivar`;
+
+  const tbody = document.getElementById('db-tbody');
+  tbody.innerHTML = rows.map(r => {
+    const imps = [...r[10].map(i=>`<span style="color:#166534;font-weight:600;font-size:.75rem">▲ ${i}</span>`),
+                  ...r[11].map(i=>`<span style="color:var(--stone);font-size:.75rem">▲ ${i}</span>`)].join(' ');
+    return `<tr>
+      <td class="nome">${r[0]}${r[9]?` <span class="leaky-badge">⚡</span>`:''}</td>
+      <td>${siBadge(r[1],r[2])}</td>
+      <td>${autoBadge(r[3])}</td>
+      <td>${fiorBadge(r[4])}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--stone)">${r[5]}</td>
+      <td class="${fredColor(r[6])}" style="font-size:.82rem">${r[6]}</td>
+      <td style="font-size:.78rem;color:var(--stone);white-space:nowrap">${r[7==='origine'?7:7]}</td>
+      <td style="font-size:.78rem">${imps||'<span style="color:var(--stone)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── COMPAT ───────────────────────────────────────────────────
+function populateCompat() {
+  ['cv1','cv2'].forEach(id => {
+    const sel = document.getElementById(id);
+    DB.sort((a,b)=>a[0].localeCompare(b[0])).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r[0]; opt.textContent = r[0];
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function checkCompat() {
+  const n1 = document.getElementById('cv1').value;
+  const n2 = document.getElementById('cv2').value;
+  const r1 = DB.find(r=>r[0]===n1);
+  const r2 = DB.find(r=>r[0]===n2);
+  const box = document.getElementById('compat-result');
+
+  if (r1) document.getElementById('cv1-info').innerHTML =
+    `${siBadge(r1[1],r1[2])} ${autoBadge(r1[3])} ${fiorBadge(r1[4])}`;
+  if (r2) document.getElementById('cv2-info').innerHTML =
+    `${siBadge(r2[1],r2[2])} ${autoBadge(r2[3])} ${fiorBadge(r2[4])}`;
+
+  if (!r1 || !r2) {
+    box.className='compat-result';
+    box.innerHTML=`<span class="compat-icon">🫒</span><div class="compat-verdict" style="color:var(--stone)">Seleziona due cultivar</div>`;
+    return;
+  }
+
+  const si1=r1[1], si2=r2[1], e1=r1[2], e2=r2[2];
+  const hasND = si1==="N.D." || si2==="N.D.";
+  const hasEst = e1||e2;
+
+  let cls, icon, verdict, detail;
+
+  if (hasND) {
+    cls='uncertain'; icon='❓'; verdict='Compatibilità sconosciuta';
+    detail=`Una o entrambe le cultivar non hanno il gruppo SI determinato. Impossibile verificare la compatibilità senza test stigma in vitro.`;
+  } else if (si1===si2) {
+    cls='incompatible'; icon='❌';
+    verdict = hasEst ? 'Probabilmente Incompatibili ⚠️' : 'Incompatibili';
+    detail=`${n1} (${si1}) e ${n2} (${si2}) appartengono allo stesso gruppo SI. ${hasEst?'⚠️ Attenzione: almeno un gruppo è stimato, non confermato da test stigma in vitro.':'Secondo il sistema DSI, varietà dello stesso gruppo non si fecondate tra loro.'}`;
+  } else {
+    cls='compatible'; icon='✅';
+    verdict = hasEst ? 'Probabilmente Compatibili ⚠️' : 'Compatibili';
+    detail=`${n1} (${si1}) e ${n2} (${si2}) appartengono a gruppi SI opposti. ${hasEst?'⚠️ Attenzione: almeno un gruppo è stimato, non confermato da test stigma in vitro.':'La fecondazione incrociata è attesa secondo il sistema DSI (Mariotti 2021).'}`;
+  }
+
+  box.className=`compat-result ${cls}`;
+  box.innerHTML=`<span class="compat-icon">${icon}</span>
+    <div class="compat-verdict">${verdict}</div>
+    <div class="compat-groups">${siBadge(si1,e1)} <span style="color:var(--stone)">×</span> ${siBadge(si2,e2)}</div>
+    <div class="compat-detail">${detail}</div>`;
+}
+
+// ── SELETTORE ─────────────────────────────────────────────────
+function buildOlivetRows() {
+  const container = document.getElementById('oliveto-rows');
+  container.innerHTML = '';
+  for (let i=0; i<10; i++) {
+    const row = document.createElement('div');
+    row.className='oliveto-row';
+    row.innerHTML=`
+      <select class="cv-sel" data-idx="${i}" onchange="updateRow(${i})">
+        <option value="">— Seleziona cultivar —</option>
+        ${DB.sort((a,b)=>a[0].localeCompare(b[0])).map(r=>`<option value="${r[0]}">${r[0]}</option>`).join('')}
+      </select>
+      <input type="number" class="qty-inp" data-idx="${i}" min="1" value="" placeholder="n°">
+      <div class="si-cell" id="si-${i}">—</div>
+      <div class="fior-cell" id="fior-${i}">—</div>
+      <div class="auto-cell" id="auto-${i}">—</div>
+    `;
+    container.appendChild(row);
+  }
+}
+
+function updateRow(i) {
+  const sel = document.querySelector(`.cv-sel[data-idx="${i}"]`).value;
+  const r = DB.find(d=>d[0]===sel);
+  document.getElementById(`si-${i}`).innerHTML = r ? siBadge(r[1],r[2]) : '—';
+  document.getElementById(`fior-${i}`).innerHTML = r ? fiorBadge(r[4]) : '—';
+  document.getElementById(`auto-${i}`).innerHTML = r ? autoBadge(r[3]) : '—';
+}
+
+function analyzeOliveto() {
+  const entries = [];
+  for (let i=0;i<10;i++) {
+    const nome = document.querySelector(`.cv-sel[data-idx="${i}"]`).value;
+    const qty = parseInt(document.querySelector(`.qty-inp[data-idx="${i}"]`).value)||0;
+    if (nome && qty>0) {
+      const r = DB.find(d=>d[0]===nome);
+      if (r) entries.push({nome, qty, r});
+    }
+  }
+  if (!entries.length) { alert('Inserisci almeno una cultivar con il numero di piante.'); return; }
+
+  const totale = entries.reduce((s,e)=>s+e.qty,0);
+  const g1 = entries.filter(e=>e.r[1]==='G1').reduce((s,e)=>s+e.qty,0);
+  const g2 = entries.filter(e=>e.r[1]==='G2').reduce((s,e)=>s+e.qty,0);
+  const nd = entries.filter(e=>e.r[1]==='N.D.').reduce((s,e)=>s+e.qty,0);
+  const pctG1 = g1+g2>0 ? g1/(g1+g2) : 0;
+  const pctG2 = g1+g2>0 ? g2/(g1+g2) : 0;
+
+  const fiorPrec = new Set(entries.filter(e=>e.r[4]==='Precoce').map(e=>e.nome)).size;
+  const fiorMed  = new Set(entries.filter(e=>e.r[4]==='Media').map(e=>e.nome)).size;
+  const fiorTard = new Set(entries.filter(e=>e.r[4]==='Tardiva').map(e=>e.nome)).size;
+  const autof    = entries.filter(e=>e.r[3]==='Autofertile').length;
+
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="result-metric"><div class="metric-val">${totale}</div><div class="metric-lbl">Piante totali inserite</div></div>
+    <div class="result-metric"><div class="metric-val" style="color:var(--g1-txt)">${g1}</div><div class="metric-lbl">Piante Gruppo G1</div></div>
+    <div class="result-metric"><div class="metric-val" style="color:var(--leaf)">${g2}</div><div class="metric-lbl">Piante Gruppo G2</div></div>
+    <div class="result-metric"><div class="metric-val" style="color:var(--stone)">${nd}</div><div class="metric-lbl">Piante Gruppo N.D.</div></div>
+    <div class="result-metric"><div class="metric-val">${(pctG1*100).toFixed(0)}%</div><div class="metric-lbl">% piante G1 su totale G1+G2</div></div>
+    <div class="result-metric"><div class="metric-val">${(pctG2*100).toFixed(0)}%</div><div class="metric-lbl">% piante G2 su totale G1+G2</div></div>
+    <div class="result-metric"><div class="metric-val">${fiorPrec+fiorMed+fiorTard}</div><div class="metric-lbl">Epoche di fioritura coperte</div></div>
+    <div class="result-metric"><div class="metric-val">${autof}</div><div class="metric-lbl">Cultivar autofertili</div></div>
+  `;
+
+  const diagBox = document.getElementById('diagnosis-box');
+  let diagCls='diagnosis', diagMsg='';
+  if (g1===0 && g2===0) {
+    diagCls='diagnosis warn'; diagMsg='⚠️ Nessuna cultivar con gruppo SI determinato. Impossibile valutare l\'equilibrio.';
+  } else if (g1===0) {
+    diagCls='diagnosis danger'; diagMsg='🔴 CRITICO: nessuna pianta G1. Impollinazione incrociata impossibile.';
+  } else if (g2===0) {
+    diagCls='diagnosis danger'; diagMsg='🔴 CRITICO: nessuna pianta G2. Impollinazione incrociata impossibile.';
+  } else if (pctG1>0.85) {
+    diagCls='diagnosis warn'; diagMsg='🟠 SQUILIBRIO: G1 predominante ('+Math.round(pctG1*100)+'%). Aggiungere cultivar G2 (Pendolino, Maurino, Dolce Agogia).';
+  } else if (pctG2>0.85) {
+    diagCls='diagnosis warn'; diagMsg='🟠 SQUILIBRIO: G2 predominante ('+Math.round(pctG2*100)+'%). Aggiungere cultivar G1 (Moraiolo, Frantoio, Leccino).';
+  } else if (pctG1>=0.4 && pctG1<=0.6) {
+    diagMsg='🟢 OTTIMALE: bilanciamento G1/G2 ideale (40–60%). Ottima base per impollinazione efficace.';
+  } else {
+    diagMsg='🟡 ACCETTABILE: lieve squilibrio. Valutare aggiunta di cultivar del gruppo minoritario.';
+  }
+  diagBox.className=diagCls;
+  diagBox.innerHTML=diagMsg;
+
+  // Recs
+  const presentNames = new Set(entries.map(e=>e.nome));
+  const needG2 = g1>g2;
+  const needG1 = g2>g1;
+  const RECS_ALL = [
+    {nome:"Pendolino",    si:"G2", fior:"Media",   resa:"12-16%", motivo:"Impollinatore G2 universale, polline molto stabile. Compatibile con Moraiolo, Leccino, Frantoio."},
+    {nome:"Maurino",      si:"G2", fior:"Media",   resa:"13-17%", motivo:"G2, polline stabile nel tempo. Ottimo per Frantoio e Moraiolo."},
+    {nome:"Dolce Agogia", si:"G2", fior:"Media",   resa:"14-17%", motivo:"G2 parzialmente autofertile. Impollinatrice efficace del Moraiolo."},
+    {nome:"Nostrale di Rigali",si:"G2",fior:"Precoce",resa:"14-16%",motivo:"G2 a fioritura precoce. Copre fascia anticipata, alta affinità con Moraiolo."},
+    {nome:"Raio",         si:"G2", fior:"Precoce", resa:"N.D.",   motivo:"G2 precoce. Alta affinità documentata con Moraiolo."},
+    {nome:"Moraiolo",     si:"G1", fior:"Tardiva", resa:"18-20%", motivo:"G1 tardivo. Copre fascia finale di fioritura, alta resa."},
+    {nome:"Frantoio",     si:"G1", fior:"Media",   resa:"18-22%", motivo:"G1 autofertile. Impollinatore documentato per molte G2."},
+    {nome:"Leccino",      si:"G1", fior:"Media",   resa:"14-18%", motivo:"G1 autosterile, alta resistenza al freddo."},
+    {nome:"Lecciana",     si:"N.D.",fior:"Precoce",resa:"18-21%", motivo:"Alta resa, Xylella-resistente, autofertile precoce. Utile in zone a rischio."},
+    {nome:"Casaliva",     si:"N.D.",fior:"Precoce",resa:"19-23%", motivo:"Autofertile precoce, resa elevata. Cultivar base DOP Garda."},
+  ];
+  const filteredRecs = RECS_ALL.filter(rec => {
+    if (presentNames.has(rec.nome)) return false;
+    if (needG2 && rec.si==='G2') return true;
+    if (needG1 && rec.si==='G1') return true;
+    if (!needG1 && !needG2) return true;
+    if (rec.si==='N.D.') return true;
+    return false;
+  }).slice(0,8);
+
+  document.getElementById('rec-cards').innerHTML = filteredRecs.map(rec => {
+    const r = DB.find(d=>d[0]===rec.nome);
+    const sib = r ? siBadge(r[1],r[2]) : `<span class="badge badge-nd">N.D.</span>`;
+    return `<div class="rec-card">
+      <div class="rec-badge">${sib}</div>
+      <div>
+        <div class="rec-name">${rec.nome}</div>
+        <div class="rec-why">${rec.motivo}</div>
+        <div class="rec-meta">Fioritura: ${rec.fior} · Resa: ${rec.resa}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('oliveto-results').style.display='block';
+  document.getElementById('oliveto-results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetOliveto() {
+  document.querySelectorAll('.cv-sel').forEach(s=>s.value='');
+  document.querySelectorAll('.qty-inp').forEach(i=>i.value='');
+  document.querySelectorAll('.si-cell,.fior-cell,.auto-cell').forEach(c=>c.innerHTML='—');
+  document.getElementById('oliveto-results').style.display='none';
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Stats
+  const g1 = DB.filter(r=>r[1]==='G1').length;
+  const g2 = DB.filter(r=>r[1]==='G2').length;
+  const est = DB.filter(r=>r[2]).length;
+  document.getElementById('hero-tot').textContent = DB.length;
+  document.getElementById('hero-g1').textContent = g1;
+  document.getElementById('hero-g2').textContent = g2;
+  document.getElementById('hero-est').textContent = est;
+
+  renderDB();
+  populateCompat();
+  buildOlivetRows();
+});
+</script>
+</body>
+</html>
